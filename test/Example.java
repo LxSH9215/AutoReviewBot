@@ -26,4 +26,4 @@ public class Example {
         this.items = null;  // Initialize items
         this.safeItems = new ArrayList<>(items);
     }
-}
+}public class Test { public String bad() { return null; }}
