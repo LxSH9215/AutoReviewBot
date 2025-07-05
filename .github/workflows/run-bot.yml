@@ -1,5 +1,6 @@
 name: Run AutoReviewBot
 
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -27,3 +28,10 @@ jobs:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node bot.js
+      - name: Debug
+        run: |
+          echo "Checking workflow..."
+          ls -la
+          echo "APP_ID: ${{ secrets.APP_ID != '' }}"
+          echo "Files:"
+          find . -type f
