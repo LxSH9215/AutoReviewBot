@@ -9,7 +9,7 @@ const rules = yaml.load(fs.readFileSync("rules.yaml", "utf8"));
 // Initialize GitHub App
 const app = new App({
   appId: process.env.APP_ID,
-  privateKey: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+  privateKey: process.env.APP_PRIVATE_KEY.replace(/\\n/g, '\n'),
   webhooks: { secret: process.env.WEBHOOK_SECRET },
 });
 
