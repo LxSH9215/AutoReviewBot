@@ -1,11 +1,9 @@
-package test;
-
+// DemoExample.java
 import java.util.*;
 
-public class Example {
-    public List<String> items;  // Violation: exposed mutable state
+public class DemoExample {
+    // Violation: Exposed mutable collection (Guideline #4)
+    public List<String> items = new ArrayList<>();
     
-    public Integer getValue() {
-        return null;  // Violation: returning null
     }
 }
