@@ -3,6 +3,7 @@ name: Run AutoReviewBot
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [main]
 
 jobs:
   run-bot:
@@ -15,6 +16,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'npm'
           
       - name: Install dependencies
         run: npm install
@@ -22,7 +24,7 @@ jobs:
       - name: Run AutoReviewBot
         env:
           APP_ID: ${{ secrets.APP_ID }}
-          PRIVATE_KEY: "${{ secrets.APP_PRIVATE_KEY }}"
+          PRIVATE_KEY: "${{ secrets.PRIVATE_KEY }}"
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node bot.js
