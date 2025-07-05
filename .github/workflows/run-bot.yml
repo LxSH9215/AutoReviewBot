@@ -1,34 +1,20 @@
 name: Run AutoReviewBot
 
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths:
-      - '**.java'  # Trigger only when Java files change
-    branches: [main]
+on: 
+  pull_request: {}
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Essential for PR diff access
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run AutoReviewBot
+      - run: npm install
+      - run: node bot.js
         env:
           APP_ID: ${{ secrets.APP_ID }}
           PRIVATE_KEY: "${{ secrets.PRIVATE_KEY }}"
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node bot.js
