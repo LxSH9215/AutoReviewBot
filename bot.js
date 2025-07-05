@@ -113,3 +113,7 @@ app.webhooks.on(["pull_request.opened", "pull_request.synchronize"], async ({ oc
 // Start server
 const port = process.env.PORT || 3000;
 app.start(port).then(() => console.log(`Bot running on port ${port}`));
+console.log("🟢 AutoReviewBot STARTED");
+console.log("APP_ID:", process.env.APP_ID ? "Exists" : "Missing");
+console.log("PRIVATE_KEY:", process.env.PRIVATE_KEY ? "Exists" : "Missing");
+console.log("WEBHOOK_SECRET:", process.env.WEBHOOK_SECRET ? "Exists" : "Missing");
