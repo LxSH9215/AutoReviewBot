@@ -27,3 +27,4 @@ public class Example {
         this.safeItems = new ArrayList<>(items);
     }
 }public class Test { public String bad() { return null; }}
+public class Test { public String bad() { return null; }}
