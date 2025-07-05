@@ -8,4 +8,3 @@ public class Example {
     public Integer getValue() {
         return null;  // Violation: returning null
     }
-}
