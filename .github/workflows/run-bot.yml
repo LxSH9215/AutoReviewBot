@@ -22,7 +22,7 @@ jobs:
       - name: Run AutoReviewBot
         env:
           APP_ID: ${{ secrets.APP_ID }}
-          PRIVATE_KEY: "${{ secrets.PRIVATE_KEY }}"
+          PRIVATE_KEY: "${{ secrets.APP_PRIVATE_KEY }}"
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
         run: node bot.js
