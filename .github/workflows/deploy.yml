@@ -3,6 +3,11 @@ name: Deploy AutoReviewBot
 on:
   push:
     branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'bot.js'
+      - 'package.json'
+      - 'rules.yaml'
 
 jobs:
   build-and-deploy:
@@ -26,3 +31,5 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/autoreviewbot:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
