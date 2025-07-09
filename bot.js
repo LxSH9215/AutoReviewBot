@@ -1,3 +1,6 @@
+// Add at top of file
+const TARGET_REPO_OWNER = "LxSH9215";
+const TARGET_REPO_NAME = "AutoReviewBot-Test";
 const core = require('@actions/core');
 const github = require('@actions/github');
 const yaml = require('js-yaml');
