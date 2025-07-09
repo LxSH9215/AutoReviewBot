@@ -25,6 +25,11 @@ jobs:
           npm install @actions/github
           npm install js-yaml
           npm install parse-diff
+
+      - name: Run AutoReviewBot
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}  # Use PAT instead of default token
+        run: node bot.js
           
       - name: Run AutoReviewBot
         env:
