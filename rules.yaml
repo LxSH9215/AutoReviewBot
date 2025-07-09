@@ -1,0 +1,17 @@
+rules:
+  - name: "AvoidReturnNull"
+    pattern: "return null;"
+    message: "Return Optional.empty() instead of null"
+    example_fixed: "return Optional.empty();"
+    severity: ERROR
+
+  - name: "DefensiveCopy"
+    pattern: "this\\.\\w+ = \\w+;"
+    message: "Use defensive copying for mutable collections"
+    example_fixed: "this.items = new ArrayList<>(items);"
+    severity: WARNING
+
+  - name: "UseStreams"
+    pattern: "for\\s*\\(.*\\)\\s*\\{"
+    message: "Replace loops with Stream API where possible"
+    severity: INFO
