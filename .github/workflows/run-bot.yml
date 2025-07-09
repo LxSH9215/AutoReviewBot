@@ -6,7 +6,6 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
-  issues: write  # Add this
 
 jobs:
   run-bot:
@@ -19,7 +18,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
           
       - name: Install dependencies
         run: |
@@ -30,7 +28,5 @@ jobs:
           
       - name: Run AutoReviewBot
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this is correct
-        run: |
-          echo "GITHUB_TOKEN length: ${#GITHUB_TOKEN}"  # Debug token presence
-          node bot.js
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node bot.js
