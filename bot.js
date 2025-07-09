@@ -10,10 +10,13 @@ const TARGET_REPO_NAME = "AutoReviewBot-Test";
 
 async function run() {
   try {
-    core.info('🚀 AutoReviewBot starting...');
-    core.info(`🔧 Targeting repository: ${TARGET_REPO_OWNER}/${TARGET_REPO_NAME}`);
+    console.log('🚀 AutoReviewBot starting...');
+    console.log(`🔧 Targeting repository: ${TARGET_REPO_OWNER}/${TARGET_REPO_NAME}`);
     
-    const token = core.getInput('GITHUB_TOKEN');
+    // Get token from environment
+    const token = process.env.GITHUB_TOKEN;
+    console.log(`🔑 Token present: ${token ? 'Yes' : 'No'}`);
+    
     if (!token) {
       core.setFailed('❌ Missing GITHUB_TOKEN');
       return;
@@ -23,11 +26,9 @@ async function run() {
     const context = github.context;
 
     // Validate event type
-    if (context.eventName !== 'workflow_dispatch') {
-      core.warning(`ℹ️ Running outside of workflow_dispatch event: ${context.eventName}`);
-    }
+    console.log(`ℹ️ Event type: ${context.eventName}`);
 
-    core.info('🔍 Finding latest open PR in target repository...');
+    console.log('🔍 Finding latest open PR in target repository...');
     
     // Get open PRs in target repository
     const { data: prs } = await octokit.rest.pulls.list({
@@ -46,21 +47,21 @@ async function run() {
     const prNumber = targetPr.number;
     const headSha = targetPr.head.sha;
     
-    core.info(`🎯 Selected PR #${prNumber} (SHA: ${headSha})`);
-    core.info(`🔗 PR Title: ${targetPr.title}`);
+    console.log(`🎯 Selected PR #${prNumber} (SHA: ${headSha})`);
+    console.log(`🔗 PR Title: ${targetPr.title}`);
 
     // Load rules
     let rules;
     try {
       rules = yaml.load(fs.readFileSync('rules.yaml', 'utf8'));
-      core.info(`📋 Loaded ${rules.length} rules from rules.yaml`);
+      console.log(`📋 Loaded ${rules.length} rules from rules.yaml`);
     } catch (error) {
       core.setFailed(`❌ Error loading rules: ${error}`);
       return;
     }
 
     // Get PR diff from target repository
-    core.info('📥 Fetching PR diff...');
+    console.log('📥 Fetching PR diff...');
     let diffData;
     try {
       ({ data: diffData } = await octokit.rest.repos.compareCommits({
@@ -70,7 +71,7 @@ async function run() {
         head: headSha,
         mediaType: { format: 'diff' }
       }));
-      core.info(`📄 Fetched PR diff (${diffData.length} bytes)`);
+      console.log(`📄 Fetched PR diff (${diffData.length} bytes)`);
     } catch (error) {
       core.setFailed(`❌ Error fetching diff: ${error}`);
       return;
@@ -78,7 +79,7 @@ async function run() {
 
     // Parse diff
     const diffFiles = parseDiff(diffData);
-    core.info(`🔍 Found ${diffFiles.length} changed files`);
+    console.log(`🔍 Found ${diffFiles.length} changed files`);
     
     const comments = [];
     let hasCritical = false;
@@ -87,11 +88,11 @@ async function run() {
     // Analyze each file
     diffFiles.forEach(file => {
       if (!file.to || !file.to.endsWith('.java')) {
-        core.info(`⏩ Skipping non-Java file: ${file.to || 'unknown'}`);
+        console.log(`⏩ Skipping non-Java file: ${file.to || 'unknown'}`);
         return;
       }
 
-      core.info(`🔎 Analyzing ${file.to}`);
+      console.log(`🔎 Analyzing ${file.to}`);
       const fileLines = file.chunks.flatMap(chunk => 
         chunk.changes.filter(c => c.type !== 'del').map(c => c.content)
       );
@@ -121,17 +122,17 @@ async function run() {
             if (rule.critical) hasCritical = true;
           }
         } catch (error) {
-          core.error(`❌ Error processing rule ${rule.id}: ${error}`);
+          console.error(`❌ Error processing rule ${rule.id}: ${error}`);
         }
       });
       
       if (fileViolations > 0) {
-        core.info(`❗ Found ${fileViolations} violations in ${file.to}`);
+        console.log(`❗ Found ${fileViolations} violations in ${file.to}`);
       }
     });
 
-    core.info(`📊 Total violations found: ${totalViolations}`);
-    core.info(`🚨 Critical issues: ${hasCritical ? 'YES' : 'NO'}`);
+    console.log(`📊 Total violations found: ${totalViolations}`);
+    console.log(`🚨 Critical issues: ${hasCritical ? 'YES' : 'NO'}`);
 
     // Create review in target repository
     if (comments.length > 0) {
@@ -144,12 +145,12 @@ async function run() {
           event: hasCritical ? 'REQUEST_CHANGES' : 'COMMENT',
           comments
         });
-        core.info(`💬 Posted review with ${comments.length} comments to target repository`);
+        console.log(`💬 Posted review with ${comments.length} comments to target repository`);
       } catch (error) {
-        core.error(`❌ Error creating review: ${error}`);
+        console.error(`❌ Error creating review: ${error}`);
       }
     } else {
-      core.info('✅ No violations found');
+      console.log('✅ No violations found');
     }
 
     // Set check status in target repository
@@ -172,7 +173,7 @@ async function run() {
               : 'Code meets quality standards'
         }
       });
-      core.info(`✅ Created check with status: ${hasCritical ? 'failure' : 'success'}`);
+      console.log(`✅ Created check with status: ${hasCritical ? 'failure' : 'success'}`);
     } catch (error) {
       core.setFailed(`❌ Error creating check: ${error}`);
     }
