@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const yaml = require('js-yaml');
 const fs = require('fs');
-const parseDiff = require('parse-diff');
+const parseDiff = require('parse-diff');  // Corrected import
 
 // Configuration for target repository
 const TARGET_REPO_OWNER = "LxSH9215";
@@ -18,14 +18,37 @@ async function run() {
     console.log(`🔑 Token present: ${token ? 'Yes' : 'No'}`);
     
     if (!token) {
-      core.setFailed('❌ Missing GITHUB_TOKEN');
-      return;
+      console.error('❌ Missing GITHUB_TOKEN');
+      process.exit(1);
     }
 
     const octokit = github.getOctokit(token);
-    const context = github.context;
+    
+    // ========== AUTHENTICATION CHECK ==========
+    try {
+      const { data: user } = await octokit.rest.users.getAuthenticated();
+      console.log(`🔑 Authenticated as ${user.login}`);
+    } catch (authError) {
+      console.error('❌ Authentication failed:', authError);
+      process.exit(1);
+    }
+    
+    // ========== TOKEN SCOPE VERIFICATION ==========
+    try {
+      const { headers } = await octokit.request('HEAD /');
+      const scopes = headers['x-oauth-scopes']?.split(', ') || [];
+      console.log(`🔐 Token scopes: ${scopes.join(', ')}`);
+      
+      if (!scopes.includes('repo')) {
+        console.error('❌ Token missing required "repo" scope');
+        process.exit(1);
+      }
+    } catch (scopeError) {
+      console.error('❌ Scope verification failed:', scopeError);
+      process.exit(1);
+    }
 
-    // Validate event type
+    const context = github.context;
     console.log(`ℹ️ Event type: ${context.eventName}`);
 
     console.log('🔍 Finding latest open PR in target repository...');
@@ -38,8 +61,8 @@ async function run() {
     });
 
     if (prs.length === 0) {
-      core.setFailed('❌ No open PRs found in target repository');
-      return;
+      console.error('❌ No open PRs found in target repository');
+      process.exit(0);  // Not a failure condition
     }
 
     // Use the first PR (most recent)
@@ -56,25 +79,26 @@ async function run() {
       rules = yaml.load(fs.readFileSync('rules.yaml', 'utf8'));
       console.log(`📋 Loaded ${rules.length} rules from rules.yaml`);
     } catch (error) {
-      core.setFailed(`❌ Error loading rules: ${error}`);
-      return;
+      console.error(`❌ Error loading rules: ${error}`);
+      process.exit(1);
     }
 
     // Get PR diff from target repository
     console.log('📥 Fetching PR diff...');
     let diffData;
     try {
-      ({ data: diffData } = await octokit.rest.repos.compareCommits({
+      const response = await octokit.rest.repos.compareCommits({
         owner: TARGET_REPO_OWNER,
         repo: TARGET_REPO_NAME,
         base: targetPr.base.sha,
         head: headSha,
         mediaType: { format: 'diff' }
-      }));
+      });
+      diffData = response.data;
       console.log(`📄 Fetched PR diff (${diffData.length} bytes)`);
     } catch (error) {
-      core.setFailed(`❌ Error fetching diff: ${error}`);
-      return;
+      console.error(`❌ Error fetching diff: ${error}`);
+      process.exit(1);
     }
 
     // Parse diff
@@ -147,7 +171,7 @@ async function run() {
         });
         console.log(`💬 Posted review with ${comments.length} comments to target repository`);
       } catch (error) {
-        console.error(`❌ Error creating review: ${error}`);
+        console.error(`❌ Error creating review: ${error.message}`);
       }
     } else {
       console.log('✅ No violations found');
@@ -175,12 +199,13 @@ async function run() {
       });
       console.log(`✅ Created check with status: ${hasCritical ? 'failure' : 'success'}`);
     } catch (error) {
-      core.setFailed(`❌ Error creating check: ${error}`);
+      console.error(`❌ Error creating check: ${error.message}`);
     }
 
+    console.log('🏁 AutoReviewBot completed successfully');
   } catch (error) {
-    core.setFailed(`🔥 Bot failed: ${error}`);
-    console.error(error.stack);
+    console.error(`🔥 Bot failed: ${error.stack}`);
+    process.exit(1);
   }
 }
 
