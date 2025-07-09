@@ -1,8 +1,6 @@
 name: AutoReviewBot
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]  # Add this
-    branches: [main]  # Add this
+  workflow_dispatch:  # Allows manual triggering
 
 permissions:
   contents: read
@@ -12,14 +10,20 @@ permissions:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    # Remove container section for quick testing
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - name: Run Bot
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Run AutoReviewBot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node bot.js
