@@ -1,84 +1,38 @@
-# rules.yaml
-rules:
-  # Rule 1: Avoid exposing mutable state (Guideline #4)
-  - id: PROTECT_MUTABLE_STATE
-    pattern: 'public\s+(List|Map|Set)\s+\w+\s*(=.*)?;'
-    message: "Avoid exposing mutable collections directly - use defensive copying"
-    severity: critical
-    fix: |
-      Make field private and provide accessor:
-      - private final {type} {name};
-      + public {type} get{Name}() {{
-      +     return new {type}({name});
-      + }}
-    files: "*.java"
+- id: "PROTECT_MUTABLE_STATE"
+  pattern: "public\\s+(List|Map|Set)\\s+\\w+\\s*;"
+  message: "Avoid exposing mutable collections directly - use defensive copying"
+  critical: true
+  fix: |
+    // Replace with:
+    private final List<String> items = new ArrayList<>();
+    
+    public List<String> getItems() {
+      return Collections.unmodifiableList(items);
+    }
 
-  # Rule 2: Avoid returning null (Guideline #3)
-  - id: AVOID_NULL_RETURN
-    pattern: 'return\s+null;'
-    message: "Return Optional.empty() instead of null"
-    severity: critical
-    fix: "return Optional.empty();"
-    files: "*.java"
+- id: "AVOID_NULL_RETURN"
+  pattern: "return\\s+null;"
+  message: "Return Optional.empty() instead of null"
+  critical: true
+  fix: "return Optional.empty();"
 
-  # Rule 3: Use modern collections (Guideline #6)
-  - id: OBSOLETE_COLLECTION
-    pattern: 'new\s+Vector\s*<.*>\s*\(\)'
-    message: "Use ArrayList instead of obsolete Vector class"
-    severity: warning
-    fix: "new ArrayList<>()"
-    files: "*.java"
+- id: "CODE_TO_INTERFACES"
+  pattern: "new\\s+(ArrayList|HashMap|HashSet)\\s*<\\w*>\\s*\\(\\s*\\)"
+  message: "Declare variables by their interface (e.g., List, Map, Set)"
+  critical: false
+  fix: "List<String> list = new ArrayList<>();"
 
-  # Rule 4: Avoid generic exceptions (Guideline #5)
-  - id: GENERIC_EXCEPTION
-    pattern: 'catch\s*\(\s*Exception\s+\w+\s*\)'
-    message: "Avoid catching generic Exception - specify concrete exception types"
-    severity: warning
-    fix: "catch (SpecificException e)  // e.g. IOException"
-    files: "*.java"
+- id: "USE_STREAMS"
+  pattern: "for\\s*\\(\\s*\\w+\\s+\\w+\\s*:\\s*\\w+\\s*\\)\\s*{"
+  message: "Consider using Java Streams for collection processing"
+  critical: false
+  fix: |
+    items.stream()
+         .filter(item -> item.isValid())
+         .forEach(System.out::println);
 
-  # Rule 5: Override hashCode with equals (Guideline #10)
-  - id: MISSING_HASHCODE
-    pattern: |
-      @Override\s+
-      public\s+boolean\s+equals\([^)]*\).*?\{[\s\S]*?\}(?!(.*?@Override.*?public\s+int\s+hashCode))
-    message: "Must override hashCode() when overriding equals()"
-    severity: critical
-    fix: |
-      @Override
-      public int hashCode() {
-          return Objects.hash({fields});
-      }
-    files: "*.java"
-
-  # Rule 6: Use streams/lambdas (Guideline #2)
-  - id: USE_STREAMS
-    pattern: 'for\s*\([^)]+\)\s*\{[^}]*if\s*\([^)]+\)[^}]*}'
-    message: "Replace loops with Java Streams API"
-    severity: warning
-    fix: |
-      {collection}.stream()
-          .filter(item -> {condition})
-          .collect(Collectors.toList());
-    files: "*.java"
-
-  # Rule 7: Code to interfaces (Guideline #8)
-  - id: CODE_TO_INTERFACES
-    pattern: '\b(ArrayList|LinkedList|HashSet|HashMap)\s*<'
-    message: "Declare with interface type (List/Set/Map) instead of concrete implementation"
-    severity: warning
-    fix: |
-      {interface}<> instead of {concrete}<>
-      Example: List<> instead of ArrayList<>
-    files: "*.java"
-
-  # Rule 8: Validate Optional access (Guideline #3 extension)
-  - id: UNSAFE_OPTIONAL_ACCESS
-    pattern: 'Optional\.\w+\(\)\.\w+\(\)'
-    message: "Avoid unsafe Optional value access - use ifPresent()/orElse()"
-    severity: warning
-    fix: |
-      Use safe access methods:
-      optionalValue.ifPresent(v -> ...)
-      optionalValue.orElse(...)
-    files: "*.java"
+- id: "TODO_COMMENT"
+  pattern: "//\\s*TODO"
+  message: "Remove TODO comments before merging"
+  critical: true
+  fix: "// REMOVED: TODO comment"
