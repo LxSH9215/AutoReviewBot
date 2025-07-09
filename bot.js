@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const yaml = require('js-yaml');
 const fs = require('fs');
-const { parseDiff } = require('parse-diff');
+const parseDiff = require('parse-diff');
 
 // Configuration for target repository
 const TARGET_REPO_OWNER = "LxSH9215";
