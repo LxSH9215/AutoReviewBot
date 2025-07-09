@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const yaml = require('js-yaml');
 const fs = require('fs');
-const parseDiff = require('parse-diff');  // Corrected import
+const parseDiff = require('parse-diff');
 
 // Configuration for target repository
 const TARGET_REPO_OWNER = "LxSH9215";
@@ -25,9 +25,11 @@ async function run() {
     const octokit = github.getOctokit(token);
     
     // ========== AUTHENTICATION CHECK ==========
+    let authenticatedUser;
     try {
       const { data: user } = await octokit.rest.users.getAuthenticated();
-      console.log(`🔑 Authenticated as ${user.login}`);
+      authenticatedUser = user;
+      console.log(`🔑 Authenticated as ${authenticatedUser.login}`);
     } catch (authError) {
       console.error('❌ Authentication failed:', authError);
       process.exit(1);
@@ -69,8 +71,10 @@ async function run() {
     const targetPr = prs[0];
     const prNumber = targetPr.number;
     const headSha = targetPr.head.sha;
+    const prAuthor = targetPr.user.login;
     
     console.log(`🎯 Selected PR #${prNumber} (SHA: ${headSha})`);
+    console.log(`👤 PR Author: ${prAuthor}`);
     console.log(`🔗 PR Title: ${targetPr.title}`);
 
     // Load rules
@@ -161,15 +165,21 @@ async function run() {
     // Create review in target repository
     if (comments.length > 0) {
       try {
+        // Determine review event type
+        let event = 'COMMENT';
+        if (hasCritical && prAuthor !== authenticatedUser.login) {
+          event = 'REQUEST_CHANGES';
+        }
+        
         await octokit.rest.pulls.createReview({
           owner: TARGET_REPO_OWNER,
           repo: TARGET_REPO_NAME,
           pull_number: prNumber,
           commit_id: headSha,
-          event: hasCritical ? 'REQUEST_CHANGES' : 'COMMENT',
+          event: event,
           comments
         });
-        console.log(`💬 Posted review with ${comments.length} comments to target repository`);
+        console.log(`💬 Posted review with ${comments.length} comments (event: ${event})`);
       } catch (error) {
         console.error(`❌ Error creating review: ${error.message}`);
       }
@@ -177,29 +187,26 @@ async function run() {
       console.log('✅ No violations found');
     }
 
-    // Set check status in target repository
+    // Set commit status (replaces checks API)
     try {
-      await octokit.rest.checks.create({
+      const state = hasCritical ? 'failure' : totalViolations > 0 ? 'pending' : 'success';
+      const description = hasCritical 
+        ? 'Critical violations block merging' 
+        : totalViolations > 0 
+          ? 'Violations found but not critical' 
+          : 'Code meets quality standards';
+      
+      await octokit.rest.repos.createCommitStatus({
         owner: TARGET_REPO_OWNER,
         repo: TARGET_REPO_NAME,
-        name: 'AutoReviewBot',
-        head_sha: headSha,
-        status: 'completed',
-        conclusion: hasCritical ? 'failure' : totalViolations > 0 ? 'neutral' : 'success',
-        output: {
-          title: totalViolations > 0 
-            ? `Found ${totalViolations} violation${totalViolations > 1 ? 's' : ''}`
-            : 'No violations found',
-          summary: hasCritical 
-            ? 'Critical violations block merging'
-            : totalViolations > 0
-              ? 'Violations found but not critical'
-              : 'Code meets quality standards'
-        }
+        sha: headSha,
+        state: state,
+        context: 'AutoReviewBot',
+        description: description
       });
-      console.log(`✅ Created check with status: ${hasCritical ? 'failure' : 'success'}`);
+      console.log(`✅ Created commit status: ${state}`);
     } catch (error) {
-      console.error(`❌ Error creating check: ${error.message}`);
+      console.error(`❌ Error creating commit status: ${error.message}`);
     }
 
     console.log('🏁 AutoReviewBot completed successfully');
