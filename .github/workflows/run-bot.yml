@@ -1,20 +1,25 @@
-name: Run AutoReviewBot
+name: AutoReviewBot
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]  # Add this
+    branches: [main]  # Add this
 
-on: 
-  pull_request: {}
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    # Remove container section for quick testing
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - run: npm install
-      - run: node bot.js
+      - name: Run Bot
         env:
-          APP_ID: ${{ secrets.APP_ID }}
-          PRIVATE_KEY: "${{ secrets.PRIVATE_KEY }}"
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node bot.js
