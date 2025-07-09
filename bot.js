@@ -1,15 +1,18 @@
-// Add at top of file
-const TARGET_REPO_OWNER = "LxSH9215";
-const TARGET_REPO_NAME = "AutoReviewBot-Test";
 const core = require('@actions/core');
 const github = require('@actions/github');
 const yaml = require('js-yaml');
 const fs = require('fs');
 const { parseDiff } = require('parse-diff');
 
+// Configuration for target repository
+const TARGET_REPO_OWNER = "LxSH9215";
+const TARGET_REPO_NAME = "AutoReviewBot-Test";
+
 async function run() {
   try {
     core.info('🚀 AutoReviewBot starting...');
+    core.info(`🔧 Targeting repository: ${TARGET_REPO_OWNER}/${TARGET_REPO_NAME}`);
+    
     const token = core.getInput('GITHUB_TOKEN');
     if (!token) {
       core.setFailed('❌ Missing GITHUB_TOKEN');
@@ -18,39 +21,33 @@ async function run() {
 
     const octokit = github.getOctokit(token);
     const context = github.context;
-    
+
     // Validate event type
-    if (context.eventName !== 'pull_request') {
-      core.setFailed(`❌ Invalid event: ${context.eventName}. Only PR events supported`);
+    if (context.eventName !== 'workflow_dispatch') {
+      core.warning(`ℹ️ Running outside of workflow_dispatch event: ${context.eventName}`);
+    }
+
+    core.info('🔍 Finding latest open PR in target repository...');
+    
+    // Get open PRs in target repository
+    const { data: prs } = await octokit.rest.pulls.list({
+      owner: TARGET_REPO_OWNER,
+      repo: TARGET_REPO_NAME,
+      state: 'open'
+    });
+
+    if (prs.length === 0) {
+      core.setFailed('❌ No open PRs found in target repository');
       return;
     }
 
-    const pr = context.payload.pull_request;
-    if (!pr) {
-      core.setFailed('❌ Missing pull request data');
-      return;
-    }
-
-    const prNumber = pr.number;
-    const headSha = pr.head.sha;
-    core.info(`📦 Processing PR #${prNumber} (SHA: ${headSha})`);
-
-    // Check for merge conflicts
-    if (pr.mergeable === false) {
-      core.info('⚠️ PR has merge conflicts - skipping analysis');
-      await octokit.rest.checks.create({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        name: 'AutoReviewBot',
-        head_sha: headSha,
-        conclusion: 'neutral',
-        output: {
-          title: 'Skipped due to merge conflicts',
-          summary: 'Resolve conflicts to enable analysis'
-        }
-      });
-      return;
-    }
+    // Use the first PR (most recent)
+    const targetPr = prs[0];
+    const prNumber = targetPr.number;
+    const headSha = targetPr.head.sha;
+    
+    core.info(`🎯 Selected PR #${prNumber} (SHA: ${headSha})`);
+    core.info(`🔗 PR Title: ${targetPr.title}`);
 
     // Load rules
     let rules;
@@ -62,13 +59,15 @@ async function run() {
       return;
     }
 
-    // Get PR diff
+    // Get PR diff from target repository
+    core.info('📥 Fetching PR diff...');
     let diffData;
     try {
-      ({ data: diffData } = await octokit.rest.pulls.get({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: prNumber,
+      ({ data: diffData } = await octokit.rest.repos.compareCommits({
+        owner: TARGET_REPO_OWNER,
+        repo: TARGET_REPO_NAME,
+        base: targetPr.base.sha,
+        head: headSha,
         mediaType: { format: 'diff' }
       }));
       core.info(`📄 Fetched PR diff (${diffData.length} bytes)`);
@@ -134,18 +133,18 @@ async function run() {
     core.info(`📊 Total violations found: ${totalViolations}`);
     core.info(`🚨 Critical issues: ${hasCritical ? 'YES' : 'NO'}`);
 
-    // Create review if violations found
+    // Create review in target repository
     if (comments.length > 0) {
       try {
         await octokit.rest.pulls.createReview({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
+          owner: TARGET_REPO_OWNER,
+          repo: TARGET_REPO_NAME,
           pull_number: prNumber,
           commit_id: headSha,
           event: hasCritical ? 'REQUEST_CHANGES' : 'COMMENT',
           comments
         });
-        core.info(`💬 Posted review with ${comments.length} comments`);
+        core.info(`💬 Posted review with ${comments.length} comments to target repository`);
       } catch (error) {
         core.error(`❌ Error creating review: ${error}`);
       }
@@ -153,11 +152,11 @@ async function run() {
       core.info('✅ No violations found');
     }
 
-    // Set check status
+    // Set check status in target repository
     try {
       await octokit.rest.checks.create({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
+        owner: TARGET_REPO_OWNER,
+        repo: TARGET_REPO_NAME,
         name: 'AutoReviewBot',
         head_sha: headSha,
         status: 'completed',
