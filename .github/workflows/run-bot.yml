@@ -1,0 +1,29 @@
+name: AutoReviewBot
+on:
+  workflow_dispatch:  # Allows manual triggering
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run AutoReviewBot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node bot.js

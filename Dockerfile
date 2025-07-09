@@ -1,22 +1,20 @@
-FROM openjdk:17-alpine
-
-# Install Node.js and npm
-RUN apk add --no-cache nodejs npm
-
-# Install Probot
-RUN npm install -g probot
+# Use official Node image
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json first to leverage Docker cache
-COPY package*.json ./
+# Copy package files first for better caching
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --production
 
-# Copy application files
+# Copy app files
 COPY . .
 
-# Start command
-CMD ["probot", "run", "/app/bot.js"]
+# Expose port
+EXPOSE 3000
+
+# Run the bot
+CMD ["node", "bot.js"]

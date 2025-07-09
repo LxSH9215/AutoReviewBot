@@ -1,26 +1,14 @@
 {
   "name": "autoreviewbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "GitHub AutoReviewBot",
   "main": "bot.js",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/LxSH9215/AutoReviewBot.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/LxSH9215/AutoReviewBot/issues"
-  },
-  "homepage": "https://github.com/LxSH9215/AutoReviewBot#readme",
   "dependencies": {
-    "probot": "^13.4.5"
+    "@octokit/app": "^12.0.0",
+    "@octokit/rest": "^19.0.0",
+    "js-yaml": "^4.1.0"
   }
 }

@@ -1,0 +1,38 @@
+- id: "PROTECT_MUTABLE_STATE"
+  pattern: "public\\s+(List|Map|Set)\\s+\\w+\\s*;"
+  message: "Avoid exposing mutable collections directly - use defensive copying"
+  critical: true
+  fix: |
+    // Replace with:
+    private final List<String> items = new ArrayList<>();
+    
+    public List<String> getItems() {
+      return Collections.unmodifiableList(items);
+    }
+
+- id: "AVOID_NULL_RETURN"
+  pattern: "return\\s+null;"
+  message: "Return Optional.empty() instead of null"
+  critical: true
+  fix: "return Optional.empty();"
+
+- id: "CODE_TO_INTERFACES"
+  pattern: "new\\s+(ArrayList|HashMap|HashSet)\\s*<\\w*>\\s*\\(\\s*\\)"
+  message: "Declare variables by their interface (e.g., List, Map, Set)"
+  critical: false
+  fix: "List<String> list = new ArrayList<>();"
+
+- id: "USE_STREAMS"
+  pattern: "for\\s*\\(\\s*\\w+\\s+\\w+\\s*:\\s*\\w+\\s*\\)\\s*{"
+  message: "Consider using Java Streams for collection processing"
+  critical: false
+  fix: |
+    items.stream()
+         .filter(item -> item.isValid())
+         .forEach(System.out::println);
+
+- id: "TODO_COMMENT"
+  pattern: "//\\s*TODO"
+  message: "Remove TODO comments before merging"
+  critical: true
+  fix: "// REMOVED: TODO comment"
