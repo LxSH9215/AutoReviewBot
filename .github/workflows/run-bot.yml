@@ -6,6 +6,7 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
+  statuses: write
 
 jobs:
   run-bot:
@@ -25,13 +26,8 @@ jobs:
           npm install @actions/github
           npm install js-yaml
           npm install parse-diff
-
-      - name: Run AutoReviewBot
-        env:
-          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}  # Use PAT instead of default token
-        run: node bot.js
           
       - name: Run AutoReviewBot
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}  # Use PAT here
         run: node bot.js
